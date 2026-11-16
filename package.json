@@ -1,8 +1,8 @@
 {
-  "name": "gladys-integration-template-js",
+  "name": "gladys-spot-forecast",
   "version": "1.0.0",
   "private": true,
-  "description": "Official starter template to build an external integration for Gladys Assistant with the JavaScript SDK.",
+  "description": "Gladys Assistant integration: forecast Nord Pool spot electricity prices a week ahead (Finland), from nordpool-predict-fi.",
   "type": "module",
   "main": "index.js",
   "scripts": {
