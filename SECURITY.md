@@ -30,6 +30,13 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+The integration stores no secret: it reads a public file on GitHub
+(`raw.githubusercontent.com`) and the public GitHub API (`api.github.com`),
+without account, token or key, over HTTPS. The only file it writes is
+`/data/scene-events.json` (the hours whose scene events were fired). It opens
+no port and talks to nothing on the local network.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+and the third-party services the integration reads (GitHub, the
+nordpool-predict-fi project).

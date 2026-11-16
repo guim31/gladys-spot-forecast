@@ -31,17 +31,25 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+index.js                          SDK wiring only: src/app.js registers the handlers before connect()
+src/app.js                        refresh cycle (own minute timer, onPoll fallback), states, scene events,
+                                  "refresh" action, scene action, widget, config and connection lifecycle
+src/source.js                     the open forecasts by zone (nordpool-predict-fi for FI), ETag, commit date
+src/forecast.js                   the forecast in memory, refresh policy (30 min, backoff), snapshot
+src/prices.js                     pure computations: current slot, summary, cheapest window
+src/device.js                     one device per zone (external id on the zone "fi") and its states
+src/triggers.js                   scene events fired when an hour begins
+src/scenes.js                     scene action: cheapest run of N hours within H hours
+src/widget.js                     "forecast" dashboard widget (manifest `widgets`)
+src/ledger.js                     hours whose scene events are out, silenced choices (/data/scene-events.json)
+src/time.js                       clock of the zone (Europe/Helsinki): HH:MM, weekday, day/month
+src/i18n.js                       device and feature names, every user-facing text, en/fr/de/es
+src/issues.js                     a repeated failure logged once, its recovery once
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
-gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
-.github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
+gladys-assistant-integration.json manifest: config, action, triggers, scene action, widget
+docs/{en,fr,de,es}.md             user documentation, same sections (test/i18n.test.js)
+test/                             node --test, against the SDK's fake Gladys and a fake source
+test/fixtures/source/             the real forecast of 16/11/2026 and the GitHub commit answer
 ```
 
 ## Rules
@@ -82,6 +90,25 @@ test/                             node --test, against the SDK's fake Gladys (in
   manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
+
+# Prévision des prix spot : source et pièges propres à cette intégration
+
+- **Source** : `https://raw.githubusercontent.com/vividfog/nordpool-predict-fi/main/deploy/prediction.json`
+  (MIT), paires `[horodatage UTC en ms (flottant), c€/kWh TVA comprise]`, horaires, **la veille comprise**
+  (≈ 218 heures le 16/11/2026, du J-2 22:00 UTC au J+7). GitHub la met en cache 5 min et renvoie un `ETag` :
+  `If-None-Match` donne un 304 sans corps. Pas de date dans le fichier : la date de la prévision vient du
+  dernier commit (`api.github.com/repos/…/commits?path=deploy/prediction.json&per_page=1`, 60 appels/h sans
+  jeton), appelé seulement quand le fichier change, avec repli sur l'heure où le changement a été vu.
+- Unité publiée : **€/kWh** (c€ / 100), comme les autres intégrations de prix de guim31 ; TVA finlandaise
+  comprise (le modèle la met), à dire partout.
+- **Aucune autre prévision ouverte sans clé** trouvée pour la Suède ou l'Allemagne (16/11/2026 : seulement des
+  projets d'étudiants, sans fichier stable). `ZONES` de `src/source.js` est prêt pour une autre zone (un appareil
+  par zone) ; les déclencheurs n'ont pas de champ de zone : en ajouter un **nouveau** déclencheur le jour venu.
+- Le déclencheur `cheapest_window_started` est **glissant** (« rien de moins cher dans les H prochaines heures ») :
+  avec des prix en baisse il serait vrai heure après heure, d'où le silence du même choix jusqu'à la fin de
+  l'horizon (`silent_until` dans `/data/scene-events.json`). `price_below_started` ne part qu'au franchissement.
+- Les heures affichées sont celles d'`Europe/Helsinki` (pas le `TZ` de Gladys) : une heure de prix finlandaise.
+- `transports: ["cloud"]` : le brief disait `local`, mais l'intégration ne vit que d'un fichier sur Internet.
 
 ---
 

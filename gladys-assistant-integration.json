@@ -1,177 +1,896 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Spot Price Forecast",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Forecast Nord Pool spot electricity prices for Finland, a week ahead, to plan appliances.",
+    "fr": "Prévision des prix spot Nord Pool de l'électricité en Finlande, une semaine à l'avance.",
+    "de": "Prognose der Nord-Pool-Spotpreise für Strom in Finnland, eine Woche im Voraus.",
+    "es": "Previsión de los precios spot Nord Pool de la electricidad en Finlandia, una semana antes."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
-  "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "docker_image": "ghcr.io/guim31/gladys-spot-forecast:1.0.0",
+  "gladys_version": ">=5.3.0",
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-spot-forecast/main/cover.png",
+  "categories": ["energy"],
+  "countries": ["FI"],
+  "transports": ["cloud"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Spot price forecast",
+        "fr": "Prévision des prix spot",
+        "de": "Spotpreis-Prognose",
+        "es": "Previsión de precios spot"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "The open model nordpool-predict-fi (vividfog, MIT) forecasts the Nord Pool Finland day-ahead prices hour by hour, about a week ahead, VAT included, without account or key. A forecast, not the published prices: for those, use a Nord Pool or ENTSO-E integration. Add the device from the Discovery tab and the widget from the dashboard. Not affiliated with Nord Pool.",
+        "fr": "Le modèle ouvert nordpool-predict-fi (vividfog, MIT) prévoit les prix day-ahead Nord Pool de la Finlande heure par heure, environ une semaine à l'avance, TVA comprise, sans compte ni clé. C'est une prévision, pas les prix publiés : pour eux, utilisez une intégration Nord Pool ou ENTSO-E. Ajoutez l'appareil depuis l'onglet Découverte et le widget depuis le tableau de bord. Sans lien avec Nord Pool.",
+        "de": "Das offene Modell nordpool-predict-fi (vividfog, MIT) sagt die Day-Ahead-Preise von Nord Pool für Finnland Stunde für Stunde voraus, etwa eine Woche im Voraus, inkl. MwSt., ohne Konto und ohne Schlüssel. Eine Prognose, nicht die veröffentlichten Preise: Für diese nutze eine Nord-Pool- oder ENTSO-E-Integration. Füge das Gerät über den Tab „Entdecken“ hinzu und das Widget über das Dashboard. Nicht mit Nord Pool verbunden.",
+        "es": "El modelo abierto nordpool-predict-fi (vividfog, MIT) prevé los precios day-ahead de Nord Pool para Finlandia hora a hora, aproximadamente con una semana de antelación, IVA incluido, sin cuenta ni clave. Es una previsión, no los precios publicados: para estos, use una integración Nord Pool o ENTSO-E. Añada el dispositivo desde la pestaña Descubrir y el widget desde el panel. Sin relación con Nord Pool."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-spot-forecast/blob/main/docs/en.md",
+          "label": {
+            "en": "Documentation",
+            "fr": "Documentation",
+            "de": "Dokumentation",
+            "es": "Documentación"
+          }
+        },
+        {
+          "url": "https://github.com/vividfog/nordpool-predict-fi",
+          "label": {
+            "en": "The forecast model",
+            "fr": "Le modèle de prévision",
+            "de": "Das Prognosemodell",
+            "es": "El modelo de previsión"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
-    },
-    {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
+      "key": "window_hours",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "label": {
+        "en": "Length of the cheapest window",
+        "fr": "Durée de la plage la moins chère",
+        "de": "Länge des günstigsten Blocks",
+        "es": "Duración del tramo más barato"
+      },
+      "description": {
+        "en": "The device shows the start of the cheapest run of this many consecutive hours.",
+        "fr": "L'appareil affiche le début de la suite la moins chère de ce nombre d'heures consécutives.",
+        "de": "Das Gerät zeigt den Beginn der günstigsten Folge so vieler aufeinanderfolgender Stunden.",
+        "es": "El dispositivo muestra el inicio de la serie más barata de este número de horas consecutivas."
+      },
       "required": false,
-      "default": "celsius",
+      "default": "3",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "1",
+          "label": {
+            "en": "1 hour",
+            "fr": "1 heure",
+            "de": "1 Stunde",
+            "es": "1 hora"
+          }
+        },
+        {
+          "value": "2",
+          "label": {
+            "en": "2 hours",
+            "fr": "2 heures",
+            "de": "2 Stunden",
+            "es": "2 horas"
+          }
+        },
+        {
+          "value": "3",
+          "label": {
+            "en": "3 hours",
+            "fr": "3 heures",
+            "de": "3 Stunden",
+            "es": "3 horas"
+          }
+        },
+        {
+          "value": "4",
+          "label": {
+            "en": "4 hours",
+            "fr": "4 heures",
+            "de": "4 Stunden",
+            "es": "4 horas"
+          }
+        },
+        {
+          "value": "5",
+          "label": {
+            "en": "5 hours",
+            "fr": "5 heures",
+            "de": "5 Stunden",
+            "es": "5 horas"
+          }
+        },
+        {
+          "value": "6",
+          "label": {
+            "en": "6 hours",
+            "fr": "6 heures",
+            "de": "6 Stunden",
+            "es": "6 horas"
+          }
+        },
+        {
+          "value": "8",
+          "label": {
+            "en": "8 hours",
+            "fr": "8 heures",
+            "de": "8 Stunden",
+            "es": "8 horas"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "window_horizon",
+      "type": "select",
+      "label": {
+        "en": "Search the cheapest window in",
+        "fr": "Chercher la plage la moins chère dans",
+        "de": "Günstigsten Block suchen in",
+        "es": "Buscar el tramo más barato en"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "From the current hour.",
+        "fr": "À partir de l'heure en cours.",
+        "de": "Ab der aktuellen Stunde.",
+        "es": "A partir de la hora actual."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "24",
+      "options": [
+        {
+          "value": "12",
+          "label": {
+            "en": "Next 12 hours",
+            "fr": "12 prochaines heures",
+            "de": "Nächste 12 Stunden",
+            "es": "Próximas 12 horas"
+          }
+        },
+        {
+          "value": "24",
+          "label": {
+            "en": "Next 24 hours",
+            "fr": "24 prochaines heures",
+            "de": "Nächste 24 Stunden",
+            "es": "Próximas 24 horas"
+          }
+        },
+        {
+          "value": "48",
+          "label": {
+            "en": "Next 48 hours",
+            "fr": "48 prochaines heures",
+            "de": "Nächste 48 Stunden",
+            "es": "Próximas 48 horas"
+          }
+        },
+        {
+          "value": "72",
+          "label": {
+            "en": "Next 72 hours",
+            "fr": "72 prochaines heures",
+            "de": "Nächste 72 Stunden",
+            "es": "Próximas 72 horas"
+          }
+        },
+        {
+          "value": "168",
+          "label": {
+            "en": "Next 7 days",
+            "fr": "7 prochains jours",
+            "de": "Nächste 7 Tage",
+            "es": "Próximos 7 días"
+          }
+        }
+      ]
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the feature names",
+        "fr": "Langue des noms de fonctionnalités",
+        "de": "Sprache der Funktionsnamen",
+        "es": "Idioma de los nombres de las funciones"
+      },
+      "description": {
+        "en": "Used when the device is added to Gladys: the names do not change afterwards.",
+        "fr": "Utilisée quand l'appareil est ajouté à Gladys : les noms ne changent plus ensuite.",
+        "de": "Wird beim Hinzufügen des Geräts zu Gladys verwendet: Die Namen ändern sich danach nicht mehr.",
+        "es": "Se usa cuando el dispositivo se añade a Gladys: los nombres ya no cambian después."
+      },
+      "required": false,
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "refresh",
+      "label": {
+        "en": "Read the forecast now",
+        "fr": "Lire la prévision maintenant",
+        "de": "Prognose jetzt lesen",
+        "es": "Leer la previsión ahora"
+      },
+      "description": {
+        "en": "Reads the forecast now and shows how far it goes.",
+        "fr": "Lit la prévision maintenant et affiche jusqu'où elle va.",
+        "de": "Liest die Prognose jetzt und zeigt, wie weit sie reicht.",
+        "es": "Lee la previsión ahora y muestra hasta dónde llega."
+      },
+      "timeout_seconds": 60
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "cheapest_window_started",
+      "label": {
+        "en": "Cheapest forecast hours begin",
+        "fr": "Les heures prévues les moins chères commencent",
+        "de": "Die günstigsten prognostizierten Stunden beginnen",
+        "es": "Empiezan las horas previstas más baratas"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "Start of the cheapest run of N consecutive forecast hours of the next hours; then silent until those hours are over.",
+        "fr": "Début de la suite de N heures consécutives la moins chère des prochaines heures (prévision), puis rien jusqu'à la fin de ces heures.",
+        "de": "Beginn der günstigsten Folge von N aufeinanderfolgenden Stunden der nächsten Stunden (Prognose), danach still bis zu deren Ende.",
+        "es": "Inicio de la serie de N horas consecutivas más barata de las próximas horas (previsión); luego nada hasta que terminen esas horas."
       },
       "fields": [
         {
-          "key": "device",
+          "key": "hours",
           "type": "select",
-          "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Length of the window",
+            "fr": "Durée de la plage",
+            "de": "Länge des Blocks",
+            "es": "Duración del tramo"
+          },
+          "required": true,
+          "default": "3",
+          "options": [
+            {
+              "value": "1",
+              "label": {
+                "en": "1 hour",
+                "fr": "1 heure",
+                "de": "1 Stunde",
+                "es": "1 hora"
+              }
+            },
+            {
+              "value": "2",
+              "label": {
+                "en": "2 hours",
+                "fr": "2 heures",
+                "de": "2 Stunden",
+                "es": "2 horas"
+              }
+            },
+            {
+              "value": "3",
+              "label": {
+                "en": "3 hours",
+                "fr": "3 heures",
+                "de": "3 Stunden",
+                "es": "3 horas"
+              }
+            },
+            {
+              "value": "4",
+              "label": {
+                "en": "4 hours",
+                "fr": "4 heures",
+                "de": "4 Stunden",
+                "es": "4 horas"
+              }
+            },
+            {
+              "value": "6",
+              "label": {
+                "en": "6 hours",
+                "fr": "6 heures",
+                "de": "6 Stunden",
+                "es": "6 horas"
+              }
+            },
+            {
+              "value": "8",
+              "label": {
+                "en": "8 hours",
+                "fr": "8 heures",
+                "de": "8 Stunden",
+                "es": "8 horas"
+              }
+            }
+          ]
         },
         {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "key": "horizon",
+          "type": "select",
+          "label": {
+            "en": "Nothing cheaper in the",
+            "fr": "Rien de moins cher dans les",
+            "de": "Nichts Günstigeres in den",
+            "es": "Nada más barato en las"
+          },
+          "required": true,
+          "default": "24",
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "12",
+              "label": {
+                "en": "Next 12 hours",
+                "fr": "12 prochaines heures",
+                "de": "Nächste 12 Stunden",
+                "es": "Próximas 12 horas"
+              }
+            },
+            {
+              "value": "24",
+              "label": {
+                "en": "Next 24 hours",
+                "fr": "24 prochaines heures",
+                "de": "Nächste 24 Stunden",
+                "es": "Próximas 24 horas"
+              }
+            },
+            {
+              "value": "48",
+              "label": {
+                "en": "Next 48 hours",
+                "fr": "48 prochaines heures",
+                "de": "Nächste 48 Stunden",
+                "es": "Próximas 48 horas"
+              }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "average_price",
+          "type": "number",
+          "label": {
+            "en": "Average price (€/kWh)",
+            "fr": "Prix moyen (€/kWh)",
+            "de": "Durchschnittspreis (€/kWh)",
+            "es": "Precio medio (€/kWh)"
+          }
+        },
+        {
+          "key": "start_time",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Start (HH:MM)",
+            "fr": "Début (HH:MM)",
+            "de": "Beginn (HH:MM)",
+            "es": "Inicio (HH:MM)"
+          }
+        },
+        {
+          "key": "end_time",
+          "type": "string",
+          "label": {
+            "en": "End (HH:MM)",
+            "fr": "Fin (HH:MM)",
+            "de": "Ende (HH:MM)",
+            "es": "Fin (HH:MM)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "price_below_started",
+      "label": {
+        "en": "The forecast price drops below a threshold",
+        "fr": "Le prix prévu passe sous un seuil",
+        "de": "Der Prognosepreis fällt unter eine Schwelle",
+        "es": "El precio previsto baja de un umbral"
+      },
+      "description": {
+        "en": "Start of a run of hours under the threshold (the hour before was above): once per run, with its end.",
+        "fr": "Début d'une suite d'heures sous le seuil (l'heure d'avant était au-dessus) : une fois par suite, avec sa fin.",
+        "de": "Beginn einer Reihe von Stunden unter der Schwelle (die Stunde davor lag darüber): einmal pro Reihe, mit ihrem Ende.",
+        "es": "Inicio de una serie de horas por debajo del umbral (la hora anterior estaba por encima): una vez por serie, con su fin."
+      },
+      "fields": [
+        {
+          "key": "threshold",
+          "type": "select",
+          "label": {
+            "en": "Threshold (VAT included)",
+            "fr": "Seuil (TVA comprise)",
+            "de": "Schwelle (inkl. MwSt.)",
+            "es": "Umbral (IVA incluido)"
+          },
+          "required": true,
+          "default": "0.05",
+          "options": [
+            {
+              "value": "0.00",
+              "label": {
+                "en": "0.00 €/kWh (0 c)",
+                "fr": "0,00 €/kWh (0 c)",
+                "de": "0,00 €/kWh (0 c)",
+                "es": "0,00 €/kWh (0 c)"
+              }
+            },
+            {
+              "value": "0.02",
+              "label": {
+                "en": "0.02 €/kWh (2 c)",
+                "fr": "0,02 €/kWh (2 c)",
+                "de": "0,02 €/kWh (2 c)",
+                "es": "0,02 €/kWh (2 c)"
+              }
+            },
+            {
+              "value": "0.05",
+              "label": {
+                "en": "0.05 €/kWh (5 c)",
+                "fr": "0,05 €/kWh (5 c)",
+                "de": "0,05 €/kWh (5 c)",
+                "es": "0,05 €/kWh (5 c)"
+              }
+            },
+            {
+              "value": "0.08",
+              "label": {
+                "en": "0.08 €/kWh (8 c)",
+                "fr": "0,08 €/kWh (8 c)",
+                "de": "0,08 €/kWh (8 c)",
+                "es": "0,08 €/kWh (8 c)"
+              }
+            },
+            {
+              "value": "0.10",
+              "label": {
+                "en": "0.10 €/kWh (10 c)",
+                "fr": "0,10 €/kWh (10 c)",
+                "de": "0,10 €/kWh (10 c)",
+                "es": "0,10 €/kWh (10 c)"
+              }
+            },
+            {
+              "value": "0.15",
+              "label": {
+                "en": "0.15 €/kWh (15 c)",
+                "fr": "0,15 €/kWh (15 c)",
+                "de": "0,15 €/kWh (15 c)",
+                "es": "0,15 €/kWh (15 c)"
+              }
+            },
+            {
+              "value": "0.20",
+              "label": {
+                "en": "0.20 €/kWh (20 c)",
+                "fr": "0,20 €/kWh (20 c)",
+                "de": "0,20 €/kWh (20 c)",
+                "es": "0,20 €/kWh (20 c)"
+              }
+            }
+          ]
+        }
+      ],
+      "variables": [
+        {
+          "key": "price",
+          "type": "number",
+          "label": {
+            "en": "Price of the hour (€/kWh)",
+            "fr": "Prix de l'heure (€/kWh)",
+            "de": "Preis der Stunde (€/kWh)",
+            "es": "Precio de la hora (€/kWh)"
+          }
+        },
+        {
+          "key": "hours",
+          "type": "number",
+          "label": {
+            "en": "Hours under the threshold",
+            "fr": "Heures sous le seuil",
+            "de": "Stunden unter der Schwelle",
+            "es": "Horas por debajo del umbral"
+          }
+        },
+        {
+          "key": "start_time",
+          "type": "string",
+          "label": {
+            "en": "Start (HH:MM)",
+            "fr": "Début (HH:MM)",
+            "de": "Beginn (HH:MM)",
+            "es": "Inicio (HH:MM)"
+          }
+        },
+        {
+          "key": "end_time",
+          "type": "string",
+          "label": {
+            "en": "End (HH:MM)",
+            "fr": "Fin (HH:MM)",
+            "de": "Ende (HH:MM)",
+            "es": "Fin (HH:MM)"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "find_cheapest_window",
+      "label": {
+        "en": "Find the cheapest forecast hours",
+        "fr": "Trouver les heures prévues les moins chères",
+        "de": "Günstigste prognostizierte Stunden finden",
+        "es": "Buscar las horas previstas más baratas"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "The cheapest run of N consecutive hours from now within the chosen time: start now, or at the time returned.",
+        "fr": "La suite de N heures consécutives la moins chère à partir de maintenant, dans le délai choisi : démarrer tout de suite, ou à l'heure renvoyée.",
+        "de": "Die günstigste Folge von N aufeinanderfolgenden Stunden ab jetzt innerhalb der gewählten Zeit: jetzt starten oder zur zurückgegebenen Uhrzeit.",
+        "es": "La serie de N horas consecutivas más barata desde ahora dentro del plazo elegido: empezar ya o a la hora devuelta."
+      },
+      "timeout_seconds": 40,
       "fields": [
         {
-          "key": "device",
+          "key": "hours",
           "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "label": {
+            "en": "Duration",
+            "fr": "Durée",
+            "de": "Dauer",
+            "es": "Duración"
+          },
+          "required": true,
+          "default": "2",
+          "options": [
+            {
+              "value": "1",
+              "label": {
+                "en": "1 hour",
+                "fr": "1 heure",
+                "de": "1 Stunde",
+                "es": "1 hora"
+              }
+            },
+            {
+              "value": "2",
+              "label": {
+                "en": "2 hours",
+                "fr": "2 heures",
+                "de": "2 Stunden",
+                "es": "2 horas"
+              }
+            },
+            {
+              "value": "3",
+              "label": {
+                "en": "3 hours",
+                "fr": "3 heures",
+                "de": "3 Stunden",
+                "es": "3 horas"
+              }
+            },
+            {
+              "value": "4",
+              "label": {
+                "en": "4 hours",
+                "fr": "4 heures",
+                "de": "4 Stunden",
+                "es": "4 horas"
+              }
+            },
+            {
+              "value": "5",
+              "label": {
+                "en": "5 hours",
+                "fr": "5 heures",
+                "de": "5 Stunden",
+                "es": "5 horas"
+              }
+            },
+            {
+              "value": "6",
+              "label": {
+                "en": "6 hours",
+                "fr": "6 heures",
+                "de": "6 Stunden",
+                "es": "6 horas"
+              }
+            },
+            {
+              "value": "8",
+              "label": {
+                "en": "8 hours",
+                "fr": "8 heures",
+                "de": "8 Stunden",
+                "es": "8 horas"
+              }
+            }
+          ]
+        },
+        {
+          "key": "within",
+          "type": "select",
+          "label": {
+            "en": "Within",
+            "fr": "Dans les",
+            "de": "Innerhalb der",
+            "es": "Dentro de las"
+          },
+          "required": true,
+          "default": "24",
+          "options": [
+            {
+              "value": "6",
+              "label": {
+                "en": "Next 6 hours",
+                "fr": "6 prochaines heures",
+                "de": "Nächste 6 Stunden",
+                "es": "Próximas 6 horas"
+              }
+            },
+            {
+              "value": "12",
+              "label": {
+                "en": "Next 12 hours",
+                "fr": "12 prochaines heures",
+                "de": "Nächste 12 Stunden",
+                "es": "Próximas 12 horas"
+              }
+            },
+            {
+              "value": "24",
+              "label": {
+                "en": "Next 24 hours",
+                "fr": "24 prochaines heures",
+                "de": "Nächste 24 Stunden",
+                "es": "Próximas 24 horas"
+              }
+            },
+            {
+              "value": "48",
+              "label": {
+                "en": "Next 48 hours",
+                "fr": "48 prochaines heures",
+                "de": "Nächste 48 Stunden",
+                "es": "Próximas 48 horas"
+              }
+            },
+            {
+              "value": "72",
+              "label": {
+                "en": "Next 72 hours",
+                "fr": "72 prochaines heures",
+                "de": "Nächste 72 Stunden",
+                "es": "Próximas 72 horas"
+              }
+            },
+            {
+              "value": "168",
+              "label": {
+                "en": "Next 7 days",
+                "fr": "7 prochains jours",
+                "de": "Nächste 7 Tage",
+                "es": "Próximos 7 días"
+              }
+            }
+          ]
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
+          "key": "found",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": {
+            "en": "Window found",
+            "fr": "Plage trouvée",
+            "de": "Block gefunden",
+            "es": "Tramo encontrado"
+          }
+        },
+        {
+          "key": "starts_now",
+          "type": "boolean",
+          "label": {
+            "en": "Starts now",
+            "fr": "Commence maintenant",
+            "de": "Beginnt jetzt",
+            "es": "Empieza ahora"
+          }
+        },
+        {
+          "key": "start_date",
+          "type": "string",
+          "label": {
+            "en": "Start date (YYYY-MM-DD)",
+            "fr": "Date de début (AAAA-MM-JJ)",
+            "de": "Startdatum (JJJJ-MM-TT)",
+            "es": "Fecha de inicio (AAAA-MM-DD)"
+          }
+        },
+        {
+          "key": "start_time",
+          "type": "string",
+          "label": {
+            "en": "Start (HH:MM)",
+            "fr": "Début (HH:MM)",
+            "de": "Beginn (HH:MM)",
+            "es": "Inicio (HH:MM)"
+          }
+        },
+        {
+          "key": "end_time",
+          "type": "string",
+          "label": {
+            "en": "End (HH:MM)",
+            "fr": "Fin (HH:MM)",
+            "de": "Ende (HH:MM)",
+            "es": "Fin (HH:MM)"
+          }
+        },
+        {
+          "key": "average_price",
+          "type": "number",
+          "label": {
+            "en": "Average price (€/kWh)",
+            "fr": "Prix moyen (€/kWh)",
+            "de": "Durchschnittspreis (€/kWh)",
+            "es": "Precio medio (€/kWh)"
+          }
+        },
+        {
+          "key": "minutes_to_start",
+          "type": "number",
+          "label": {
+            "en": "Minutes until the start",
+            "fr": "Minutes avant le début",
+            "de": "Minuten bis zum Beginn",
+            "es": "Minutos hasta el inicio"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "forecast",
+      "label": {
+        "en": "Spot price forecast",
+        "fr": "Prévision prix spot",
+        "de": "Spotpreis-Prognose",
+        "es": "Previsión precio spot"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "The forecast prices of the days ahead, the current price and the cheapest hours.",
+        "fr": "Les prix prévus des jours à venir, le prix actuel et les heures les moins chères.",
+        "de": "Die prognostizierten Preise der kommenden Tage, der aktuelle Preis und die günstigsten Stunden.",
+        "es": "Los precios previstos de los próximos días, el precio actual y las horas más baratas."
+      },
+      "icon": "trending-down",
+      "settings": [
+        {
+          "key": "days",
+          "type": "select",
+          "label": {
+            "en": "Days shown",
+            "fr": "Jours affichés",
+            "de": "Angezeigte Tage",
+            "es": "Días mostrados"
+          },
+          "required": false,
+          "default": "7",
+          "options": [
+            {
+              "value": "2",
+              "label": {
+                "en": "2 days",
+                "fr": "2 jours",
+                "de": "2 Tage",
+                "es": "2 días"
+              }
+            },
+            {
+              "value": "4",
+              "label": {
+                "en": "4 days",
+                "fr": "4 jours",
+                "de": "4 Tage",
+                "es": "4 días"
+              }
+            },
+            {
+              "value": "7",
+              "label": {
+                "en": "7 days",
+                "fr": "7 jours",
+                "de": "7 Tage",
+                "es": "7 días"
+              }
+            }
+          ]
+        },
+        {
+          "key": "show_tiles",
+          "type": "boolean",
+          "label": {
+            "en": "Show the price tiles",
+            "fr": "Afficher les tuiles de prix",
+            "de": "Preiskacheln anzeigen",
+            "es": "Mostrar los mosaicos de precios"
+          },
+          "required": false,
+          "default": true
+        },
+        {
+          "key": "show_status",
+          "type": "boolean",
+          "label": {
+            "en": "Show the cheapest window and the update",
+            "fr": "Afficher la plage la moins chère et la mise à jour",
+            "de": "Günstigsten Block und Aktualisierung anzeigen",
+            "es": "Mostrar el tramo más barato y la actualización"
+          },
+          "required": false,
+          "default": true
+        }
+      ]
     }
   ]
 }
