@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-16
+
 ### Added
 
 - A device for Finland with the forecast Nord Pool spot price of the current
@@ -22,3 +24,6 @@ the notes of the version's GitHub Release.
 - Scene action: find the cheapest forecast hours within a given time.
 - A "Read the forecast now" action.
 - English, French, German and Spanish texts and documentation.
+
+[Unreleased]: https://github.com/guim31/gladys-spot-forecast/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-spot-forecast/releases/tag/v1.0.0
