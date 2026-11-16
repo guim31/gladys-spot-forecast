@@ -84,6 +84,8 @@ export function weekdayTime(date, timeZone, language) {
  * @param {string} language
  */
 export function dayMonthTime(date, timeZone, language) {
-  const day = formatter(language, timeZone, { day: '2-digit', month: '2-digit' }).format(date);
+  // en-GB: the day first, like the other languages ("16/11", not "11/16").
+  const locale = language === 'en' ? 'en-GB' : language;
+  const day = formatter(locale, timeZone, { day: '2-digit', month: '2-digit' }).format(date);
   return `${day} ${clockTime(date, timeZone)}`;
 }

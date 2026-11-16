@@ -24,7 +24,8 @@ export const WIDGET_DAYS = ['2', '4', '7'];
 export const WIDGET_DEFAULTS = { days: '7', show_tiles: true, show_status: true };
 
 const HOUR = 60 * 60 * 1000;
-const round3 = (value) => Math.round(value * 1000) / 1000;
+// A tenth of a cent hides the Nordic nights: 4 decimals. `+ 0` turns -0 into 0.
+const round4 = (value) => Math.round(value * 10000) / 10000 + 0;
 
 /**
  * @param {number} value
@@ -34,6 +35,7 @@ export function formatPrice(value, language) {
   return new Intl.NumberFormat(language, {
     minimumFractionDigits: 3,
     maximumFractionDigits: 3,
+    signDisplay: 'negative',
   }).format(value);
 }
 
@@ -68,9 +70,10 @@ export function buildForecastContent({ snapshot, language: raw, settings = {} })
     (slot) => slot.start.getTime() < hourStart + days * 24 * HOUR,
   );
   if (shown.length === 0) {
+    const text = snapshot.slots.length > 0 ? TEXT.outdated : TEXT.noForecast;
     return {
       ttl_seconds: 300,
-      components: [{ type: 'text', variant: 'body', text: t(TEXT.noForecast) }],
+      components: [{ type: 'text', variant: 'body', text: t(text) }],
     };
   }
 
@@ -82,7 +85,7 @@ export function buildForecastContent({ snapshot, language: raw, settings = {} })
         components.push({
           type: 'value',
           label: t(label),
-          value: round3(price),
+          value: round4(price),
           unit: '€/kWh',
           icon,
         });
@@ -102,19 +105,19 @@ export function buildForecastContent({ snapshot, language: raw, settings = {} })
     series: [
       {
         name: t(TEXT.forecast),
-        points: shown.map((slot) => ({ t: slot.start.toISOString(), v: round3(slot.price) })),
+        points: shown.map((slot) => ({ t: slot.start.toISOString(), v: round4(slot.price) })),
       },
     ],
     annotations: [
       {
         t: summary.min.start.toISOString(),
-        value: round3(summary.min.price),
+        value: round4(summary.min.price),
         label: label(TEXT.min, summary.min),
         color: WIDGET_COLORS.SUCCESS,
       },
       {
         t: summary.max.start.toISOString(),
-        value: round3(summary.max.price),
+        value: round4(summary.max.price),
         label: label(TEXT.max, summary.max),
         color: WIDGET_COLORS.DANGER,
       },

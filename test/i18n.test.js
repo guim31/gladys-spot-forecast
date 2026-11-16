@@ -114,7 +114,7 @@ test('the name is the brand, the same in every language', () => {
 });
 
 test('the fixed texts of the code have the four languages', () => {
-  const longTexts = new Set(['noForecast', 'initFailed', 'unreachable', 'stale']);
+  const longTexts = new Set(['outdated', 'noForecast', 'initFailed', 'unreachable', 'stale']);
   const captions = new Set(['caption']);
   const found = Object.entries(TEXT).flatMap(([key, value]) =>
     problems(

@@ -68,9 +68,13 @@ export function createSceneLedger(dataDir) {
       return silentUntil[id] !== undefined && at < silentUntil[id];
     },
 
-    /** @param {string} id @param {number} until ms */
-    silence(id, until) {
+    /**
+     * Saved at once: a restart before the hour is done must not fire it again.
+     * @param {string} id @param {number} until ms
+     */
+    async silence(id, until) {
       silentUntil[id] = until;
+      await save();
     },
 
     /** @param {Date} start @param {string} id */

@@ -103,7 +103,7 @@ export function createApp(gladys, options = {}) {
     try {
       const { changed } = await forecast.refresh();
       const snapshot = forecast.snapshot(config);
-      const summary = `${snapshot.upcoming.length} hours ahead`;
+      const summary = `${snapshot.hoursAhead} hours ahead`;
       if (!announced) {
         logger.info(`Forecast ${zone} reachable: ${summary}`);
         announced = true;
@@ -125,7 +125,7 @@ export function createApp(gladys, options = {}) {
   /** The status of the integration: the worst of the zones. */
   async function updateStatus() {
     for (const forecast of forecasts) {
-      if (issues.isFailing(`api:${forecast.zone}`)) {
+      if (forecast.outage()) {
         await setStatus(false, TEXT.unreachable);
         return;
       }
@@ -182,7 +182,7 @@ export function createApp(gladys, options = {}) {
         if (windowEvent) {
           // With falling prices, the cheapest window starts "now" again an
           // hour later: one start per horizon.
-          ledger.silence(id, event.until);
+          await ledger.silence(id, event.until);
         }
         logger.debug(`Scene event ${id} (${event.data.start_time})`);
         issues.ok('scene', 'Scene events accepted by Gladys again');
@@ -195,7 +195,13 @@ export function createApp(gladys, options = {}) {
     await ledger.markDone(zone, slot.start);
   }
 
-  async function runCycle({ forceRefresh = false } = {}) {
+  /**
+   * @param {object} [cycleOptions]
+   * @param {boolean} [cycleOptions.forceRefresh] read the source now
+   * @param {boolean} [cycleOptions.events] fire the scene events; never from
+   *   an action (a scene bound to the event would loop, SDK README)
+   */
+  async function runCycle({ forceRefresh = false, events = true } = {}) {
     lastCycleAt = now();
     for (const forecast of forecasts) {
       const reason = forceRefresh ? 'asked by the user' : forecast.dueReason();
@@ -210,7 +216,9 @@ export function createApp(gladys, options = {}) {
     await updateStatus();
     for (const forecast of forecasts) {
       await publishStates(forecast);
-      await fireSceneEvents(forecast);
+      if (events) {
+        await fireSceneEvents(forecast);
+      }
     }
   }
 
@@ -297,17 +305,17 @@ export function createApp(gladys, options = {}) {
   gladys.onAction('refresh', async () => {
     logger.info('Action refresh <- reading the forecast now');
     try {
-      await cycle({ forceRefresh: true });
+      await cycle({ forceRefresh: true, events: false });
     } catch (err) {
       throw new ActionFailure(MESSAGES.refreshFailed(err.message));
     }
     const [forecast] = forecasts;
     const snapshot = forecast.snapshot(config);
-    if (snapshot.upcoming.length === 0) {
+    if (snapshot.hoursAhead === 0) {
       throw new ActionFailure(MESSAGES.refreshFailed('no hour ahead'));
     }
     return MESSAGES.refreshed({
-      hours: snapshot.upcoming.length,
+      hours: snapshot.hoursAhead,
       until: dayMonthTime(snapshot.lastEnd, snapshot.timeZone, config.language),
       price: snapshot.current ? formatPrice(snapshot.current.price, config.language) : null,
     });
@@ -319,7 +327,7 @@ export function createApp(gladys, options = {}) {
     // Nothing known yet (the container just started, the source was down):
     // one try.
     if (forecast.lastSuccessAt === null) {
-      await cycle();
+      await cycle({ events: false });
     }
     if (forecast.lastSuccessAt === null) {
       logger.info(`Scene action ${SCENE_ACTION.CHEAPEST_WINDOW} -> no forecast known`);

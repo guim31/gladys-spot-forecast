@@ -91,6 +91,12 @@ export const TEXT = {
     de: 'Noch keine Prognose: Die Quelle hat nicht geantwortet. Neue Abfrage in wenigen Minuten.',
     es: 'Aún no hay previsión: la fuente no ha respondido. Se volverá a consultar en unos minutos.',
   },
+  outdated: {
+    en: 'The last forecast read is over: the source no longer publishes.',
+    fr: 'La dernière prévision lue est dépassée : la source ne publie plus.',
+    de: 'Die zuletzt gelesene Prognose ist abgelaufen: Die Quelle veröffentlicht nicht mehr.',
+    es: 'La última previsión leída ha caducado: la fuente ya no publica.',
+  },
   unreachable: {
     en: 'The price forecast cannot be read (GitHub unreachable): the last forecast read stays in use.',
     fr: 'La prévision des prix est illisible (GitHub injoignable) : la dernière prévision lue reste utilisée.',

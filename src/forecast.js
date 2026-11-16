@@ -18,6 +18,8 @@ export const REFRESH_MS = 30 * MINUTE;
 const FAILURE_BACKOFF_MS = [5, 10, 20, 40, 60].map((minutes) => minutes * MINUTE);
 /** A forecast whose last hour is closer than this is stale (the model stopped). */
 export const STALE_AHEAD_MS = 24 * HOUR;
+/** Failed reads only turn the status red once the last success is this old. */
+export const OUTAGE_MS = 2 * HOUR;
 
 /**
  * @param {object} options
@@ -39,6 +41,11 @@ export function createForecast({ zone, fetch = globalThis.fetch, now = () => Dat
 
     get lastSuccessAt() {
       return lastSuccessAt;
+    },
+
+    /** Failing for long enough to say so (a GitHub blip stays green). */
+    outage() {
+      return failures > 0 && (lastSuccessAt === null || now() - lastSuccessAt >= OUTAGE_MS);
     },
 
     /** Why a refresh is due now (for the debug log), or null. */
@@ -108,6 +115,8 @@ export function createForecast({ zone, fetch = globalThis.fetch, now = () => Dat
         next24h: summarize(ahead(24)),
         next7d: summarize(ahead(7 * 24)),
         upcoming: ahead(7 * 24),
+        // Every hour from the current one to the end of the forecast.
+        hoursAhead: slots.filter((slot) => slot.end.getTime() > hourStart).length,
         window,
         windowHours,
         windowHorizon,

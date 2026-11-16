@@ -78,17 +78,22 @@ test('the commit date falls back on the time the forecast was seen', async () =>
   assert.equal(last(gladys, FEATURE.FORECAST_UPDATED), '16/11 15:30');
 });
 
-test('an outage keeps the forecast and says so; the return clears it', async () => {
+test('an outage keeps the forecast and says so after 2 hours; the return clears it', async () => {
   const world = await createWorld();
   world.source.down = true;
   world.clock.advance(HOUR);
   await world.app.cycle();
+  // A GitHub blip: the forecast covers days, the status stays green.
+  assert.deepEqual(world.gladys.fake.connectionStatus, { connected: true });
+  world.clock.advance(HOUR);
+  await world.app.cycle();
   assert.equal(world.gladys.fake.connectionStatus.connected, false);
   assert.match(world.gladys.fake.connectionStatus.message.fr, /dernière prévision lue/);
-  // The forecast in memory still moves with the clock: 16:30 in Helsinki.
-  near(last(world.gladys, FEATURE.PRICE_NOW), 0.17141);
+  // The forecast in memory still moves with the clock: 17:30 in Helsinki.
+  near(last(world.gladys, FEATURE.PRICE_NOW), 0.21822);
   world.source.down = false;
-  world.clock.advance(5 * MINUTE);
+  // The backoff: the next try within the hour.
+  world.clock.advance(HOUR);
   await world.app.cycle();
   assert.deepEqual(world.gladys.fake.connectionStatus, { connected: true });
 });
@@ -165,7 +170,8 @@ test('the refresh action: green when read, red with the reason otherwise', async
   const world = await createWorld();
   const ok = await world.gladys.fake.action('refresh');
   assert.equal(ok.success, true);
-  assert.match(ok.data.message.fr, /168 heures à venir, jusqu'au 24\/11 02:00/);
+  // 13:00 UTC on 16 Nov to 00:00 UTC on 24 Nov: 179 hours.
+  assert.match(ok.data.message.fr, /179 heures à venir, jusqu'au 24\/11 02:00/);
   world.source.down = true;
   const failed = await world.gladys.fake.action('refresh');
   assert.equal(failed.success, false);
@@ -247,6 +253,19 @@ test('the widget fits the core budget, in every language and setting', async () 
   const ack = await empty.gladys.fake.widgetGet('forecast', { language: 'fr' });
   assert.deepEqual(validateWidgetContent(ack.data.content), []);
   assert.match(ack.data.content.components[0].text, /Pas encore de prévision/);
+  const old = await createWorld({ at: '2026-11-25T12:00:00Z' });
+  const outdated = await old.gladys.fake.widgetGet('forecast', { language: 'en' });
+  assert.match(outdated.data.content.components[0].text, /no longer publishes/);
+});
+
+test('an action reads the source but fires no scene event', async () => {
+  const world = await createWorld({ at: '2026-11-17T21:30:00Z' });
+  const before = world.gladys.fake.sceneEvents.length;
+  world.clock.set('2026-11-17T22:00:30Z');
+  await world.gladys.fake.action('refresh');
+  assert.equal(world.gladys.fake.sceneEvents.length, before);
+  await world.app.cycle();
+  assert.ok(world.gladys.fake.sceneEvents.length > before, 'the next cycle fires them');
 });
 
 test('the states refresh on the container timer alone, without onPoll', async (t) => {

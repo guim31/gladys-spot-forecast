@@ -41,7 +41,7 @@ test('the startup says the forecast answers, once', async (t) => {
   const lines = captureLogs(t);
   await createWorld();
   assert.equal(lines.length, 1);
-  assert.match(lines[0], /\[INFO\] \[spot-forecast\] Forecast fi reachable: 168 hours ahead/);
+  assert.match(lines[0], /\[INFO\] \[spot-forecast\] Forecast fi reachable: 179 hours ahead/);
 });
 
 test('an outage is one warning, its end one info line', async (t) => {
